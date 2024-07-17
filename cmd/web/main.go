@@ -9,6 +9,12 @@ func main() {
 	// Create a new server mux
 	// and register the home function as handler for /
 	mux := http.NewServeMux()
+
+	fileServe := http.FileServer(http.Dir("./ui/static"))
+
+	// File serve route
+	mux.Handle("GET /static/", http.StripPrefix("/static", fileServe))
+
 	mux.HandleFunc("GET /{$}", homeGet)
 
 	mux.HandleFunc("GET /snippet/view/{id}", snippetViewGet)
