@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func (app *application) homeGet(w http.ResponseWriter, _ *http.Request) {
+func (app *application) homeGet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Server", "Go")
 
 	files := []string{
@@ -19,15 +19,13 @@ func (app *application) homeGet(w http.ResponseWriter, _ *http.Request) {
 	ts, err := template.ParseFiles(files...)
 
 	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 
 	err = ts.ExecuteTemplate(w, "base", nil)
 	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		app.serverError(w, r, err)
 		return
 	}
 }
@@ -35,7 +33,7 @@ func (app *application) homeGet(w http.ResponseWriter, _ *http.Request) {
 func (app *application) snippetViewGet(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil || id < 1 {
-		http.NotFound(w, r)
+		app.clientError(w, http.StatusBadRequest, err)
 		return
 	}
 

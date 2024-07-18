@@ -13,13 +13,12 @@ type application struct {
 
 func main() {
 
-	addr := flag.String("addr", ":1234", "HTTP network address")
+	addr := flag.String("addr", ":4000", "HTTP network address")
 	flag.Parse()
 
 	// Adding a structured logger
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true,
-		Level:     slog.LevelDebug,
+		Level: slog.LevelDebug,
 	}))
 
 	app := application{
