@@ -13,8 +13,14 @@ import (
 func (app *application) homeGet(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Server", "Go")
 
+	snippets, err := app.snippetModel.Latest()
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
 	files := []string{
-		"./ui/html/pages/base.html",
+		"./ui/html/base.html",
 		"./ui/html/partials/nav.html",
 		"./ui/html/pages/home.html",
 	}
@@ -26,11 +32,15 @@ func (app *application) homeGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "base", nil)
+	data := templateData{
+		Snippets: snippets,
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
 	if err != nil {
 		app.serverError(w, r, err)
-		return
 	}
+
 }
 
 func (app *application) snippetViewGet(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +61,26 @@ func (app *application) snippetViewGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "%+v", s)
+	files := []string{
+		"./ui/html/base.html",
+		"./ui/html/partials/nav.html",
+		"./ui/html/pages/view.html",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	data := templateData{
+		Snippet: s,
+	}
+
+	err = ts.ExecuteTemplate(w, "base", data)
+	if err != nil {
+		app.serverError(w, r, err)
+	}
 }
 
 func (app *application) snippetCreateGet(w http.ResponseWriter, r *http.Request) {
