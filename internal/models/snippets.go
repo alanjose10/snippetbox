@@ -2,6 +2,7 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -19,10 +20,10 @@ type SnippetModel struct {
 
 // Insert a new snippet to the database and return its id
 func (m *SnippetModel) Insert(title string, content string, expires int) (int, error) {
-	sql := `INSERT INTO snippets (title, content, created, expires) VALUES 
+	sqlStr := `INSERT INTO snippets (title, content, created, expires) VALUES 
 			(?, ?, UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? DAY))`
 
-	res, err := m.Db.Exec(sql, title, content, expires)
+	res, err := m.Db.Exec(sqlStr, title, content, expires)
 	if err != nil {
 		return 0, err
 	}
@@ -38,7 +39,26 @@ func (m *SnippetModel) Insert(title string, content string, expires int) (int, e
 
 // Return a snippet by id
 func (m *SnippetModel) Get(id int) (Snippet, error) {
-	return Snippet{}, nil
+
+	sqlStr := `SELECT id, title, content, created, expires FROM snippets
+			WHERE id = ? AND expires > UTC_TIMESTAMP()`
+
+	row := m.Db.QueryRow(sqlStr, id)
+
+	var s Snippet
+
+	err := row.Scan(&s.Id, &s.Title, &s.Content, &s.Created, &s.Expires)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Snippet{}, ErrSnippetNotFound
+		} else {
+			return Snippet{}, err
+		}
+	}
+
+	return s, nil
+
 }
 
 // Return the 10 recently created snippets
