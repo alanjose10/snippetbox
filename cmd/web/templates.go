@@ -23,16 +23,20 @@ func createTemplateCache() (map[string]*template.Template, error) {
 		return nil, err
 	}
 
-	for _, file := range globMatches {
-		name := filepath.Base(file)
+	for _, page := range globMatches {
+		name := filepath.Base(page)
 
-		files := []string{
-			"./ui/html/base.html",
-			"./ui/html/partials/nav.html",
-			file,
+		ts, err := template.ParseFiles("./ui/html/base.html")
+		if err != nil {
+			return nil, err
 		}
 
-		ts, err := template.ParseFiles(files...)
+		ts, err = ts.ParseGlob("./ui/html/partials/*.html")
+		if err != nil {
+			return nil, err
+		}
+
+		ts, err = ts.ParseFiles(page)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +53,6 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 	ts, ok := app.templateCache[page]
 	if !ok {
 		err := fmt.Errorf("the template %s does not exist", page)
-		// err := errors.New(fmt.Sprintf("the template %s does not exist", page))
 		app.serverError(w, r, err)
 		return
 	}
