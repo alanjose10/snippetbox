@@ -46,10 +46,14 @@ func (app *application) snippetCreateGet(w http.ResponseWriter, r *http.Request)
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
 
-	w.Header().Add("Server", "Go")
+	title := "Test 1"
+	content := "This is a test snippet - 1"
+	expires := 1
 
-	w.WriteHeader(http.StatusCreated)
+	id, err := app.snippetModel.Insert(title, content, expires)
+	if err != nil {
+		app.serverError(w, r, err)
+	}
 
-	fmt.Fprintf(w, "New post created")
-
+	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
