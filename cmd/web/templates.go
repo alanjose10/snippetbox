@@ -6,13 +6,22 @@ import (
 	"html/template"
 	"net/http"
 	"path/filepath"
+	"time"
 
 	"github.com/alanjose10/snippetbox/internal/models"
 )
 
 type templateData struct {
-	Snippet  models.Snippet
-	Snippets []models.Snippet
+	CurrentYear int
+	Snippet     models.Snippet
+	Snippets    []models.Snippet
+}
+
+func (app *application) newTemplateData() (t templateData) {
+	t = templateData{
+		CurrentYear: time.Now().Year(),
+	}
+	return
 }
 
 func createTemplateCache() (map[string]*template.Template, error) {
