@@ -11,6 +11,14 @@ import (
 	"github.com/alanjose10/snippetbox/internal/models"
 )
 
+func humanDate(t time.Time) string {
+	return t.Format("2 Jan 2006 at 3:04 PM")
+}
+
+var templateFunctions = template.FuncMap{
+	"humanDate": humanDate,
+}
+
 type templateData struct {
 	CurrentYear int
 	Snippet     models.Snippet
@@ -36,7 +44,8 @@ func createTemplateCache() (map[string]*template.Template, error) {
 	for _, page := range globMatches {
 		name := filepath.Base(page)
 
-		ts, err := template.ParseFiles("./ui/html/base.html")
+		ts, err := template.New(name).Funcs(templateFunctions).ParseFiles("./ui/html/base.html")
+
 		if err != nil {
 			return nil, err
 		}
