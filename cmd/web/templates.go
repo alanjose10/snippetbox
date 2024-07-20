@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -51,15 +52,23 @@ func createTemplateCache() (map[string]*template.Template, error) {
 func (app *application) render(w http.ResponseWriter, r *http.Request, status int, page string, data templateData) {
 
 	ts, ok := app.templateCache[page]
+
+	// initialize a new buffer
+	buffer := new(bytes.Buffer)
+
 	if !ok {
 		err := fmt.Errorf("the template %s does not exist", page)
 		app.serverError(w, r, err)
 		return
 	}
 
+	err := ts.ExecuteTemplate(buffer, "base", data)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
 	w.WriteHeader(status)
-
-	err := ts.ExecuteTemplate(w, "base", data)
+	_, err = buffer.WriteTo(w)
 	if err != nil {
 		app.serverError(w, r, err)
 	}
