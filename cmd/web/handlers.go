@@ -10,7 +10,6 @@ import (
 )
 
 func (app *application) homeGet(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Server", "Go")
 
 	snippets, err := app.snippetModel.Latest()
 	if err != nil {
