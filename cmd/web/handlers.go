@@ -62,30 +62,21 @@ func (app *application) snippetCreateGet(w http.ResponseWriter, r *http.Request)
 }
 
 type snippetCreateForm struct {
-	Title   string
-	Content string
-	Expires int
-	validators.Validator
+	Title                string `form:"title"`
+	Content              string `form:"content"`
+	Expires              int    `form:"expires"`
+	validators.Validator `form:"-"`
 }
 
 func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
 
-	err := r.ParseForm()
+	var form snippetCreateForm
+
+	err := app.decodePostForm(r, &form)
+
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest, err)
 		return
-	}
-
-	expires, err := strconv.Atoi(r.PostForm.Get("expires"))
-	if err != nil {
-		app.clientError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	form := snippetCreateForm{
-		Title:   r.PostForm.Get("title"),
-		Content: r.PostForm.Get("content"),
-		Expires: expires,
 	}
 
 	form.CheckField(validators.NotBlank(form.Title), "title", "This field cannot be blank")
