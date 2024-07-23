@@ -1,6 +1,15 @@
 -- Switch to using the `snippetbox` database.
 USE snippetbox;
 
+-- For user sessions
+CREATE TABLE sessions (
+    token CHAR(43) PRIMARY KEY,
+    data BLOB NOT NULL,
+    expiry TIMESTAMP(6) NOT NULL
+);
+
+CREATE INDEX sessions_expiry_idx ON sessions (expiry);
+
 -- Create a `snippets` table.
 CREATE TABLE snippets (
     id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
