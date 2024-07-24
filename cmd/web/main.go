@@ -29,6 +29,9 @@ func main() {
 
 	addr := flag.String("addr", ":4000", "HTTP network address")
 	dns := flag.String("dns", "web:password@/snippetbox?parseTime=true", "MySQL DSN")
+	tlsCert := flag.String("tls-cert", "./tls/cert.pem", "Path to TLS certificate pem file")
+	tlsKey := flag.String("tls-key", "./tls/key.pem", "Path to TLS private key")
+
 	flag.Parse()
 
 	// Adding a structured logger
@@ -64,9 +67,16 @@ func main() {
 		sessionManager: sessionManager,
 	}
 
+	server := &http.Server{
+		Addr:     *addr,
+		Handler:  app.routes(),
+		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelWarn),
+	}
+
 	logger.Info("starting server", slog.String("addr", *addr))
 
-	err = http.ListenAndServe(*addr, app.routes())
+	err = server.ListenAndServeTLS(*tlsCert, *tlsKey)
+
 	logger.Error(err.Error())
 	os.Exit(1)
 }
