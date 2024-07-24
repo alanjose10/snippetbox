@@ -18,7 +18,7 @@ func (app *application) homeGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := app.newTemplateData()
+	data := app.newTemplateData(r)
 	data.Snippets = snippets
 
 	app.render(w, r, http.StatusOK, "home.html", data)
@@ -43,7 +43,7 @@ func (app *application) snippetViewGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := app.newTemplateData()
+	data := app.newTemplateData(r)
 	data.Snippet = s
 
 	app.render(w, r, http.StatusOK, "view.html", data)
@@ -51,7 +51,7 @@ func (app *application) snippetViewGet(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) snippetCreateGet(w http.ResponseWriter, r *http.Request) {
 
-	data := app.newTemplateData()
+	data := app.newTemplateData(r)
 
 	data.Form = snippetCreateForm{
 		Expires: 7,
@@ -85,7 +85,7 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	form.CheckField(validators.PermittedValue(form.Expires, 1, 7, 365), "expires", "This field must equal 1, 7 or 365")
 
 	if !form.Valid() {
-		data := app.newTemplateData()
+		data := app.newTemplateData(r)
 		data.Form = form
 		app.render(w, r, http.StatusUnprocessableEntity, "create.html", data)
 		return
@@ -95,6 +95,8 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		app.serverError(w, r, err)
 	}
+
+	app.sessionManager.Put(r.Context(), "flash", "Snippet successfully created!")
 
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
