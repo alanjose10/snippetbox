@@ -8,4 +8,6 @@ var (
 	ErrInvalidCredentials = errors.New("models: invalid credentials")
 
 	ErrDuplicateEmail = errors.New("models: duplicate email")
+
+	ErrUserDoesNotExist = errors.New("models: user does not exist")
 )

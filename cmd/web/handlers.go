@@ -140,25 +140,104 @@ func (app *application) userSignupPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = app.userModel.Insert(form.Name, form.Email, form.Password)
+	id, err := app.userModel.Insert(form.Name, form.Email, form.Password)
 	if err != nil {
-		app.serverError(w, r, err)
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			form.AddFieldError("email", "Email address is already in use")
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "signup.html", data)
+		} else {
+			app.serverError(w, r, err)
+		}
+		return
 	}
-
-	app.sessionManager.Put(r.Context(), "flash", "User successfully created!")
-
+	app.logger.Debug(fmt.Sprintf("User created. Id: %d ", id))
+	app.sessionManager.Put(r.Context(), "flash", "Your signup was successful. Please log in.")
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+}
 
+type userLoginForm struct {
+	Email                string `form:"email"`
+	Password             string `form:"password"`
+	validators.Validator `form:"-"`
 }
 
 func (app *application) userLoginGet(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Return form for user login")
+	data := app.newTemplateData(r)
+	data.Form = userLoginForm{}
+	app.render(w, r, http.StatusOK, "login.html", data)
 }
 
 func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Login user")
+	var form userLoginForm
+
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	form.CheckField(validators.NotBlank(form.Email), "email", "This field cannot be blank")
+	form.CheckField(validators.Matches(form.Email, validators.EmailRX), "email", "Invalid email address")
+	form.CheckField(validators.NotBlank(form.Password), "password", "This field cannot be blank")
+
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, r, http.StatusUnprocessableEntity, "login.html", data)
+		return
+	}
+
+	userId, err := app.userModel.Authenticate(form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			app.logger.Debug(err.Error())
+			form.AddNonFieldError("Invalid email/password. Please try again.")
+
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "login.html", data)
+			return
+
+		} else if errors.Is(err, models.ErrUserDoesNotExist) {
+			app.logger.Debug(err.Error())
+			form.AddNonFieldError("User does not exist. Please signup.")
+
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "login.html", data)
+			return
+		} else {
+			app.serverError(w, r, err)
+		}
+	}
+
+	app.logger.Debug(fmt.Sprintf("Successfully authenticated user %d\n", userId))
+
+	err = app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "authenticatedUserId", userId)
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+
 }
 
 func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Logout user")
+	err := app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.sessionManager.Remove(r.Context(), "authenticatedUserId")
+
+	app.sessionManager.Put(r.Context(), "flash", "You have been logged out successfully!")
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+
 }
