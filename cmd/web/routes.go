@@ -18,6 +18,10 @@ func (app *application) routes() http.Handler {
 
 	dynamic := alice.New(app.sessionManager.LoadAndSave)
 
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Server is healthy"))
+	})
+
 	mux.Handle("GET /{$}", dynamic.ThenFunc(app.homeGet))
 
 	mux.Handle("GET /snippet/view/{id}", dynamic.ThenFunc(app.snippetViewGet))

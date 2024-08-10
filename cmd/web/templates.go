@@ -74,20 +74,21 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, status in
 
 	ts, ok := app.templateCache[page]
 
-	// initialize a new buffer
-	buffer := new(bytes.Buffer)
-
 	if !ok {
 		err := fmt.Errorf("the template %s does not exist", page)
 		app.serverError(w, r, err)
 		return
 	}
 
+	// initialize a new buffer
+	buffer := new(bytes.Buffer)
+
 	err := ts.ExecuteTemplate(buffer, "base", data)
 	if err != nil {
 		app.serverError(w, r, err)
 		return
 	}
+	w.Header().Set("Content-Length", "this isn't an integer!")
 	w.WriteHeader(status)
 	_, err = buffer.WriteTo(w)
 	if err != nil {
