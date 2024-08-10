@@ -16,7 +16,7 @@ func (app *application) routes() http.Handler {
 	// File serve route
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServe))
 
-	dynamic := alice.New(app.sessionManager.LoadAndSave)
+	dynamic := alice.New(app.sessionManager.LoadAndSave, app.noSurf)
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Server is healthy"))
