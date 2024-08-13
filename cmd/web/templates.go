@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"io/fs"
 	"net/http"
 	"path/filepath"
 	"time"
 
 	"github.com/alanjose10/snippetbox/internal/models"
+	"github.com/alanjose10/snippetbox/ui"
 	"github.com/justinas/nosurf"
 )
 
@@ -44,7 +46,7 @@ func createTemplateCache() (map[string]*template.Template, error) {
 
 	cache := make(map[string]*template.Template)
 
-	globMatches, err := filepath.Glob("./ui/html/pages/*.html")
+	globMatches, err := fs.Glob(ui.Files, "html/pages/*.html")
 	if err != nil {
 		return nil, err
 	}
@@ -52,18 +54,13 @@ func createTemplateCache() (map[string]*template.Template, error) {
 	for _, page := range globMatches {
 		name := filepath.Base(page)
 
-		ts, err := template.New(name).Funcs(templateFunctions).ParseFiles("./ui/html/base.html")
-
-		if err != nil {
-			return nil, err
+		patterns := []string{
+			"html/base.html",
+			"html/partials/*.html",
+			page,
 		}
 
-		ts, err = ts.ParseGlob("./ui/html/partials/*.html")
-		if err != nil {
-			return nil, err
-		}
-
-		ts, err = ts.ParseFiles(page)
+		ts, err := template.New(name).Funcs(templateFunctions).ParseFS(ui.Files, patterns...)
 		if err != nil {
 			return nil, err
 		}
