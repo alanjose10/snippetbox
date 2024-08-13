@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/alanjose10/snippetbox/internal/models"
 	"github.com/justinas/nosurf"
 )
 
@@ -73,4 +76,29 @@ func (app *application) noSurf(next http.Handler) http.Handler {
 	})
 
 	return csrfHandler
+}
+
+func (app *application) authenticated(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		id := app.sessionManager.GetInt(r.Context(), "authenticatedUserId")
+		if id == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		_, err := app.userModel.GetUserById(id)
+		if err != nil {
+			if errors.Is(err, models.ErrUserDoesNotExist) {
+				next.ServeHTTP(w, r)
+			} else {
+				app.serverError(w, r, err)
+			}
+		}
+		ctx := context.WithValue(r.Context(), isAuthenticatedContextKey, true)
+		r = r.WithContext(ctx)
+
+		next.ServeHTTP(w, r)
+
+	})
 }

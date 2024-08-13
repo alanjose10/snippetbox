@@ -56,15 +56,10 @@ func (m *UserModel) Insert(name string, email string, password string) (int, err
 
 func (m *UserModel) Authenticate(email, password string) (int, error) {
 
-	u, err := m.getUserByEmail(email)
+	u, err := m.GetUserByEmail(email)
 	if err != nil {
-
 		return 0, err
-
 	}
-
-	fmt.Printf("Hashed password: %v\n", u.HashedPassword)
-	fmt.Printf("Plain text password: %v\n", password)
 
 	if err := bcrypt.CompareHashAndPassword(u.HashedPassword, []byte(password)); err != nil {
 		fmt.Printf("Password might be wrong?")
@@ -74,11 +69,21 @@ func (m *UserModel) Authenticate(email, password string) (int, error) {
 	return u.Id, nil
 }
 
-func (m *UserModel) Exists(id int) (bool, error) {
-	return false, nil
+func (m *UserModel) GetUserById(id int) (User, error) {
+	sqlStr := `SELECT id, name, email, hashed_password, created FROM users WHERE id = ?`
+	row := m.Db.QueryRow(sqlStr, id)
+	var u User
+	if err := row.Scan(&u.Id, &u.Name, &u.Email, &u.HashedPassword, &u.Created); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return User{}, ErrUserDoesNotExist
+		} else {
+			return User{}, err
+		}
+	}
+	return u, nil
 }
 
-func (m *UserModel) getUserByEmail(email string) (User, error) {
+func (m *UserModel) GetUserByEmail(email string) (User, error) {
 	sqlStr := `SELECT id, name, email, hashed_password, created FROM users WHERE email = ?`
 
 	row := m.Db.QueryRow(sqlStr, email)
