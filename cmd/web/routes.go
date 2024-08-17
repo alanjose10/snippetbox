@@ -12,6 +12,8 @@ func (app *application) routes() http.Handler {
 	// and register the home function as handler for /
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("GET /ping", ping)
+
 	// File serve route
 	mux.Handle("GET /static/", http.FileServerFS(ui.Files))
 
